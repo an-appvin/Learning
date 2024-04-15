@@ -9,8 +9,6 @@ class Customer(models.Model):
     is_active = models.BooleanField(default=True, null=True)
     is_deleted = models.BooleanField(default=False, null=True)
     email = models.EmailField(unique=True, null=True)
-    # users = models.ManyToManyField('User', related_name='customer_users')
-    # roles = models.ManyToManyField('Role', related_name='customer_roles')
     customer_resources = models.ManyToManyField('CustomerResources', related_name='customer_resources')
 
     class Meta:
@@ -37,7 +35,6 @@ class User(models.Model):
         ('archived', 'Archived')
     ], default='active', null=True)
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='users')
-    # user_role = models.ForeignKey('Role', on_delete=models.CASCADE, related_name='user_roles')
     created_by = models.ForeignKey('Role', on_delete=models.CASCADE, related_name='created_users')
 
     class Meta:
@@ -59,8 +56,6 @@ class Resources(models.Model):
     resource_name = models.CharField(max_length=255, null=False)
     status = models.IntegerField(default=0, null=False)
     parent_id = models.IntegerField(null=True)
-    # customer_resources = models.ManyToManyField('CustomerResources', related_name='resources')
-    # user_role_privileges = models.ManyToManyField('UserRolePrivileges', related_name='resources')
 
     class Meta:
         db_table = 'resources'
