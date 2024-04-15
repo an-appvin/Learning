@@ -31,13 +31,17 @@ from backend.models.allmodels import (
 from backend.serializers.createcourseserializers import (
     ActivateCourseSerializer,
     CourseSerializer, 
-    CourseStructureSerializer,
+    # CourseStructureSerializer,
     InActivateCourseSerializer, 
     CreateCourseSerializer,
 )
+from backend.serializers.courseserializers import (
+    CourseStructureSerializer,
+
+)
 
 filtered_display = ["active", "inactive", "all"]
-class CourseView(SuperAdminMixin, ClientAdminMixin, ClientMixin, APIView):
+class CourseView(SuperAdminMixin, APIView):
     """
     GET API for super admin to list of courses or single instance based on query parameters passed
     
@@ -113,7 +117,7 @@ class CourseView(SuperAdminMixin, ClientAdminMixin, ClientMixin, APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-manage_status = ["activate", "inactivate","versioning"]
+manage = ["activate", "inactivate","versioning"]
 class ManageCourseView(SuperAdminMixin, APIView):
     """
     POST API for super admin to manage the instance of course according to passed parameter.
@@ -129,18 +133,18 @@ class ManageCourseView(SuperAdminMixin, APIView):
             if not self.has_super_admin_privileges(request):
                 return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
-            manage_status = request.data.get('manage_status')
+            manage = request.data.get('manage')
             
-            if manage_status not in ["activate", "inactivate","versioning"]:
+            if manage not in ["activate", "inactivate","versioning"]:
                 return Response({"error": "Invalid manage_status in request"}, status=status.HTTP_400_BAD_REQUEST)
             course_id = request.data.get('course_id')
             if not course_id:
                 return Response({"error": "Course ID is missing"}, status=status.HTTP_400_BAD_REQUEST)
-            if manage_status == "activate":
+            if manage == "activate":
                 return self.activate_course(course_id)
-            elif manage_status == "inactivate":
+            elif manage == "inactivate":
                 return self.inactivate_course(course_id)
-            elif manage_status == "versioning":
+            elif manage == "versioning":
                 return self.create_course_derived_version(course_id)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -150,6 +154,8 @@ class ManageCourseView(SuperAdminMixin, APIView):
             course = Course.objects.get(pk=course_id, deleted_at__isnull=True)
             if not course:
                 return Response({"error":"no course found"},status=status.HTTP_404_NOT_FOUND)
+            if course.active:
+                return Response({"message": "Course is already active."}, status=status.HTTP_200_OK)
             serializer = ActivateCourseSerializer(data={'course_id': course.id})
             if serializer.is_valid():
                 course = serializer.validated_data['course_id']
@@ -183,11 +189,16 @@ class ManageCourseView(SuperAdminMixin, APIView):
     
     def inactivate_course(self, course_id):
         try:
+            course = Course.objects.get(pk=course_id, deleted_at__isnull=True)
+            if not course:
+                return Response({"error":"no course found"},status=status.HTTP_404_NOT_FOUND)
+            if not course.active:
+                return Response({"message": "Course is already inactive."}, status=status.HTTP_200_OK)
             serializer = InActivateCourseSerializer(data={'course_id': course_id})
             if serializer.is_valid():
                 course = serializer.validated_data['course_id']
                 active_enrollments_count = CourseEnrollment.objects.filter(course=course, active=True, deleted_at__isnull=True).count()
-                if not active_enrollments_count:
+                if active_enrollments_count is None :
                     return Response({"error":"no active course enrollment found"},status=status.HTTP_404_NOT_FOUND)
                 course.active = False
                 course.save()
@@ -280,13 +291,11 @@ class FirstVersionActiveCourseListView(SuperAdminMixin, APIView):
                 return Response({"error": "No active first version courses found."}, status=status.HTTP_404_NOT_FOUND)
             serializer = FirstVersionActiveCourseListSerializer(courses, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
-
-        except ValidationError as ve:
-            return Response({"error": "Validation Error: " + str(ve)}, status=status.HTTP_400_BAD_REQUEST)
-        except Course.DoesNotExist:
-            return Response({"error": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                if isinstance(e, ValidationError):
+                    return Response({"error": "Validation Error: " + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class DerivedVersionActiveCourseListView(SuperAdminMixin, APIView):
@@ -303,10 +312,8 @@ class DerivedVersionActiveCourseListView(SuperAdminMixin, APIView):
                 return Response({"error": "No active derived courses found for the provided course ID."}, status=status.HTTP_404_NOT_FOUND)
             serializer = DerivedVersionActiveCourseListSerializer(derived_courses, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        
-        except ValidationError as ve:
-            return Response({"error": "Validation Error: " + str(ve)}, status=status.HTTP_400_BAD_REQUEST)
-        except Course.DoesNotExist:
-            return Response({"error": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                if isinstance(e, ValidationError):
+                    return Response({"error": "Validation Error: " + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

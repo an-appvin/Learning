@@ -37,7 +37,6 @@ class CourseManager(models.Manager):
             or_lookup = (
                 Q(title__icontains=query)
                 | Q(summary__icontains=query)
-                | Q(slug__icontains=query)
             )
             queryset = queryset.filter(
                 or_lookup
@@ -45,7 +44,7 @@ class CourseManager(models.Manager):
         return queryset
     
 class Course(models.Model):
-    # slug = models.SlugField(blank=True, unique=True)
+    id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=200, null=False)
     summary = models.TextField(max_length=200, blank=True, null=True)
     created_at = models.DateTimeField(auto_now=True)
@@ -82,6 +81,7 @@ class CourseStructure(models.Model):
         ('video', 'Video'),
         ('quiz', 'Quiz'),
     ]
+    id = models.AutoField(primary_key=True)
     course = models.ForeignKey(Course, related_name="course_structure", on_delete=models.CASCADE, null =  False)
     order_number = models.PositiveIntegerField()
     content_type = models.CharField(max_length=10, choices=CONTENT_TYPE)
@@ -99,6 +99,7 @@ class CourseStructure(models.Model):
     # course register record models
 # -------------------------------------
 class CourseRegisterRecord(models.Model):
+    id = models.AutoField(primary_key=True)
     customer = models.ForeignKey(Customer, related_name='registered_courses', on_delete=models.CASCADE)
     course = models.ForeignKey(Course, related_name='registered_costumer', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True, auto_now=False, null=True)
@@ -116,6 +117,7 @@ class CourseRegisterRecord(models.Model):
     # course enrollment models
 # -------------------------------------
 class CourseEnrollment(models.Model):
+    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, related_name='enrollments', on_delete=models.CASCADE)
     course = models.ForeignKey(Course, related_name='enrolled_courses', on_delete=models.CASCADE)
     enrolled_at = models.DateTimeField(auto_now_add=True)
@@ -134,6 +136,7 @@ class CourseEnrollment(models.Model):
 # -------------------------------------
 
 class UploadReadingMaterial(models.Model):
+    id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=100)
     courses = models.ManyToManyField(Course, related_name='reading_materials')
     reading_content =models.TextField()
@@ -170,6 +173,7 @@ def log_delete(sender, instance, **kwargs):
 # -------------------------------------
     
 class UploadVideo(models.Model):
+    id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=100)
     slug = models.SlugField(blank=True, unique=True)
     courses = models.ManyToManyField(Course, related_name='video_materials')
@@ -239,7 +243,7 @@ CHOICE_ORDER_OPTIONS = (
 )
 
 class Quiz(models.Model):
-
+    id = models.AutoField(primary_key=True)
     courses = models.ManyToManyField(Course, related_name='quizzes')
     title = models.CharField(verbose_name=_("Title"), max_length=60, blank=False)
     slug = models.SlugField(blank=True, unique=True)
@@ -321,6 +325,7 @@ def quiz_pre_save_receiver(sender, instance, *args, **kwargs):
 pre_save.connect(quiz_pre_save_receiver, sender=Quiz)
 
 class Question(models.Model):
+    id = models.AutoField(primary_key=True)
     quizzes = models.ManyToManyField(Quiz, related_name='questions')
     figure = models.ImageField(                             
         upload_to="uploads/%Y/%m/%d",
@@ -394,6 +399,7 @@ class Question(models.Model):
         return Choice.objects.get(id=guess).choice
 
 class Choice(models.Model):
+    id = models.AutoField(primary_key=True)
     question = models.ForeignKey(
         Question, verbose_name=_("Question"), on_delete=models.CASCADE
     )
@@ -488,6 +494,7 @@ class QuizAttemptHistoryManager(models.Manager):
         return sitting
 
 class QuizAttemptHistory(models.Model):
+    id = models.AutoField(primary_key=True)
     enrolled_user = models.ForeignKey(User, on_delete=models.CASCADE)
     quiz = models.ForeignKey(Quiz, verbose_name=_("Quiz"), on_delete=models.CASCADE)
     course = models.ForeignKey(
@@ -647,7 +654,7 @@ class ProgressManager(models.Manager):
 
 
 class Progress(models.Model):
-
+    id = models.AutoField(primary_key=True)
     enrolled_user = models.ForeignKey(User, on_delete=models.CASCADE)
     score = models.CharField(
         max_length=1024,
@@ -704,6 +711,7 @@ class Progress(models.Model):
         return QuizAttemptHistory.objects.filter(enrolled_user=self.enrolled_user, complete=True).order_by("-end")
     
 class Notification(models.Model):
+    id = models.AutoField(primary_key=True)
     message = models.TextField()
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -722,6 +730,7 @@ class CourseCompletionStatusPerUser(models.Model):
     """
     """should get new instance when courseenrollment table get new instance
     """
+    id = models.AutoField(primary_key=True)
     enrolled_user = models.ForeignKey(User, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     completion_status = models.BooleanField(default=False)
@@ -739,6 +748,7 @@ class QuizScore(models.Model):
         get updated for total_score_per_course and completed_quizzes
         
     """
+    id = models.AutoField(primary_key=True)
     enrolled_user = models.ForeignKey(User, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     total_quizzes_per_course = models.IntegerField(default=0) # through count of quizzes(active) in a course

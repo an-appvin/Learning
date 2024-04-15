@@ -16,11 +16,16 @@ from backend.models.allmodels import (
     CourseStructure,
     Quiz,
     Question,
+    QuizAttemptHistory,
 )
 from backend.serializers.createcourseserializers import (
-    CourseStructureSerializer,
+    # CourseStructureSerializer,
     CreateChoiceSerializer,
     QuizSerializer, 
+)
+from backend.serializers.courseserializers import (
+    CourseStructureSerializer,
+
 )
 import pandas as pd
 from backend.forms import (

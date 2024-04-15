@@ -1,68 +1,32 @@
-import json
-from django.shortcuts import get_object_or_404, render
-from rest_framework import status
-from django.contrib import messages
-from django.db import transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import generics
 from core.custom_mixins import (
     ClientAdminMixin,
     ClientMixin,
     SuperAdminMixin)
-from rest_framework.exceptions import NotFound, ValidationError
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.exceptions import PermissionDenied
-from django.shortcuts import get_object_or_404, render, redirect
-from django.utils.decorators import method_decorator
-from django.utils import timezone
-from django.db.models import Q
-from django.shortcuts import get_object_or_404, render
 from rest_framework import status
-from django.contrib import messages
-from django.db import transaction
 from backend.models.allmodels import (
     Course,
     CourseRegisterRecord,
-    UploadVideo,
     UploadReadingMaterial,
     CourseStructure,
     CourseEnrollment,
     Quiz,
-    Question,
 )
-from django.core.exceptions import PermissionDenied
-from django.shortcuts import get_object_or_404, render, redirect
-from django.utils.decorators import method_decorator
 from backend.serializers.createcourseserializers import (
-    ActivateCourseSerializer,
-    CourseSerializer, 
-    CourseStructureSerializer,
-    CreateChoiceSerializer,
-    InActivateCourseSerializer, 
-    QuizSerializer, 
-    CreateCourseSerializer,
+    CreateCourseStructureSerializer,
+    CreateQuizSerializer,
     CreateUploadReadingMaterialSerializer,
 )
-import pandas as pd
-###
-from django.shortcuts import get_object_or_404, render
+from backend.serializers.courseserializers import (
+    QuizSerializer,
+)
 from rest_framework import status
-from django.contrib import messages
-from django.db import transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from backend.forms import (
-    QuestionForm,
-)
-from rest_framework.exceptions import NotFound, ValidationError
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.exceptions import PermissionDenied
-from django.shortcuts import get_object_or_404, render, redirect
-from django.utils.decorators import method_decorator
-
+from rest_framework.exceptions import ValidationError
 from backend.models.coremodels import *
 from backend.serializers.courseserializers import *
 
@@ -73,7 +37,7 @@ class CourseStructureView(SuperAdminMixin, ClientAdminMixin, ClientMixin, APIVie
     POST API for super admin to create new instances of course structure while editing existing too
     
     """
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
     
     def get(self, request, course_id, format=None):
         try:
@@ -186,17 +150,26 @@ class ReadingMaterialView(SuperAdminMixin, ClientAdminMixin, ClientMixin, APIVie
     def get(self, request, course_id, format=None):
         
         try:
-            user = request.user
-            if not user:
-                return Response({"error": "Request body have no user"}, status=status.HTTP_400_BAD_REQUEST)
-            actively_enrolled = CourseEnrollment.objects.filter(course=course_id, user=user.id, active=True).exists()
-            actively_registered = CourseRegisterRecord.objects.filter(course=course_id, customer=user.customer.id, active=True).exists()
-            if not self.has_super_admin_privileges(request) or not actively_enrolled or not actively_registered :
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            # user = request.user
+            # if not user:
+            #     return Response({"error": "Request body have no user"}, status=status.HTTP_400_BAD_REQUEST)
+            # if not self.has_super_admin_privileges(request):
+            #     actively_registered = CourseRegisterRecord.objects.filter(course=course_id, customer=user.customer.id, active=True).exists()
+            #     if not actively_registered:
+            #         actively_enrolled = CourseEnrollment.objects.filter(course=course_id, user=user.id, active=True).exists()
+            #         if not actively_enrolled:
+            #             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
             content_id = request.query_params.get('content_id')
             list_mode = request.query_params.get('list', '').lower() == 'true'  # Check if list mode is enabled
             if content_id:
+                user = request.data.get('user')
+                if not self.has_super_admin_privileges(request):
+                    actively_enrolled = CourseEnrollment.objects.filter(course=course_id, user=user['id'], active=True).exists()
+                    if not actively_enrolled:
+                        actively_registered = CourseRegisterRecord.objects.filter(course=course_id, customer=user['customer'], active=True).exists()
+                        if not self.has_client_admin_privileges and not actively_registered:
+                            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
                 reading_material = UploadReadingMaterial.objects.get(
                     courses__id=course_id, 
                     id=content_id, 
@@ -207,6 +180,8 @@ class ReadingMaterialView(SuperAdminMixin, ClientAdminMixin, ClientMixin, APIVie
                     serializer = ReadingMaterialSerializer(reading_material)
                     return Response(serializer.data, status=status.HTTP_200_OK)
             elif list_mode:
+                if not self.has_super_admin_privileges(request):
+                    return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
                 reading_materials = UploadReadingMaterial.objects.filter(
                     courses__id=course_id, 
                     active=True, 
@@ -252,14 +227,17 @@ class ReadingMaterialView(SuperAdminMixin, ClientAdminMixin, ClientMixin, APIVie
                         last_order_number = CourseStructure.objects.filter(course=course).latest('order_number').order_number
                     except CourseStructure.DoesNotExist:
                         last_order_number = 0
+                    print('starting with course structure')
                     # Create new CourseStructure instance
                     course_structure_data = {
-                        'course': course_id,
+                        # 'course': course_id,
+                        'course' : course_id,
                         'order_number': last_order_number + 1,
                         'content_type': 'reading',
                         'content_id': reading_material.pk
                     }
-                    course_structure_serializer = CourseStructureSerializer(data=course_structure_data)
+                    print(course_structure_data)
+                    course_structure_serializer = CreateCourseStructureSerializer(data=course_structure_data)
                     if course_structure_serializer.is_valid():
                         course_structure_serializer.save()
                         return Response({"message": "Reading material created successfully"}, status=status.HTTP_201_CREATED)
@@ -336,10 +314,12 @@ class QuizView(SuperAdminMixin, ClientAdminMixin, ClientMixin,APIView):
         try:
             # Validate and save quiz
             requested_data = request.data.copy()
-            requested_data['courses'] = [course_id]
-            serializer = QuizSerializer(data=requested_data)
+            requested_data['courses'] = course_id
+            print(requested_data)
+            serializer = CreateQuizSerializer(data=requested_data)
             if serializer.is_valid():
                 quiz = serializer.save()
+                course.quizzes.add(quiz)
                 # If original_course is null, only save quiz
                 if course.original_course is None:
                     return Response({"message": "Quiz created successfully"}, status=status.HTTP_201_CREATED)
@@ -356,7 +336,7 @@ class QuizView(SuperAdminMixin, ClientAdminMixin, ClientMixin,APIView):
                         'content_type': 'quiz',
                         'content_id': quiz.pk
                     }
-                    course_structure_serializer = CourseStructureSerializer(data=course_structure_data)
+                    course_structure_serializer = CreateCourseStructureSerializer(data=course_structure_data)
                     if course_structure_serializer.is_valid():
                         course_structure_serializer.save()
                         return Response({"message": "Quiz created successfully"}, status=status.HTTP_201_CREATED)

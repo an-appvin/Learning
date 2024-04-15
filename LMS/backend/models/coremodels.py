@@ -4,6 +4,7 @@ from django.utils.timezone import now
 
 
 class Customer(models.Model):
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, null=True)
     status = models.CharField(max_length=255, default='active', null=True)
     is_active = models.BooleanField(default=True, null=True)
@@ -17,12 +18,14 @@ class Customer(models.Model):
 
 
 class Role(models.Model):
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     class Meta:
         db_table = 'role'
 
 class User(models.Model):
+    id = models.AutoField(primary_key=True)
     first_name = models.CharField(max_length=255, null=True)
     last_name = models.CharField(max_length=255, null=True)
     role = models.IntegerField(null=True)
@@ -42,6 +45,7 @@ class User(models.Model):
 
 
 class UserRolePrivileges(models.Model):
+    id = models.AutoField(primary_key=True)
     role = models.ForeignKey('Role', on_delete=models.CASCADE, related_name='role_privileges')
     resource = models.ForeignKey('Resources', on_delete=models.CASCADE, related_name='role_privileges')
     has_read = models.BooleanField(default=True, null=False)
@@ -53,6 +57,7 @@ class UserRolePrivileges(models.Model):
 
 
 class Resources(models.Model):
+    id = models.AutoField(primary_key=True)
     resource_name = models.CharField(max_length=255, null=False)
     status = models.IntegerField(default=0, null=False)
     parent_id = models.IntegerField(null=True)
@@ -63,6 +68,7 @@ class Resources(models.Model):
 
 
 class CustomerResources(models.Model):
+    id = models.AutoField(primary_key=True)
     resource = models.ForeignKey('Resources', on_delete=models.CASCADE, related_name='customer_resource')
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='customer_resource')
     access_type = models.IntegerField(null=True)
