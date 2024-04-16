@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound, ValidationError
 from django.utils import timezone
+from core.custom_permissions import SuperAdminPermission
 from core.custom_mixins import SuperAdminMixin
 from backend.models.coremodels import *
 from backend.serializers.registercourseserializers import *
@@ -13,14 +14,19 @@ from backend.models.allmodels import (
     CourseEnrollment,
 )
 
+filtered_display = ["active", "inactive", "all"]
+
+manage_status = ["activate","inactivate"]
 class LMSCustomerListView(SuperAdminMixin, APIView):
     """
     GET API for super admin to list of customers who have resource privilege of LMS and are active
     """
+    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
+    
     def get(self, request, format=None):
         try:
-            if not self.has_super_admin_privileges(request):
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            # if not self.has_super_admin_privileges(request):
+            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
             customer_ids_with_lms = CustomerResources.objects.filter(resource__resource_name='LMS').values_list('customer_id', flat=True)
             
@@ -42,7 +48,6 @@ class LMSCustomerListView(SuperAdminMixin, APIView):
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-filtered_display = ["active", "inactive", "all"]
 class CourseCustomerRegistrationView(SuperAdminMixin, APIView):
     """
     GET API for super admin to list of registration records or single instance based on query parameters passed
@@ -52,11 +57,12 @@ class CourseCustomerRegistrationView(SuperAdminMixin, APIView):
     PUT API for super admin to delete selected instances of registration records
 
     """
+    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
     
     def get(self, request, *args, **kwargs):
         try:
-            if not self.has_super_admin_privileges(request):
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            # if not self.has_super_admin_privileges(request):
+            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
             filtered_display = self.request.query_params.get('filtered_display')
             if filtered_display not in ["active", "inactive", "all"]:
@@ -81,8 +87,8 @@ class CourseCustomerRegistrationView(SuperAdminMixin, APIView):
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request, *args, **kwargs):
-        if not self.has_super_admin_privileges(request):
-            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        # if not self.has_super_admin_privileges(request):
+        #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
         
         course_ids = request.data.get("course_id", [])
         customer_ids = request.data.get("customer_id", [])
@@ -154,8 +160,8 @@ class CourseCustomerRegistrationView(SuperAdminMixin, APIView):
 
     def put(self, request):
         try:
-            if not self.has_super_admin_privileges(request):
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            # if not self.has_super_admin_privileges(request):
+            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
             pk = request.data.get('pk')
             registered_record = CourseRegisterRecord.objects.get(pk=pk)
@@ -184,15 +190,17 @@ class CourseCustomerRegistrationView(SuperAdminMixin, APIView):
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-manage_status = ["activate","inactivate"]
+
 class ManageCourseRegistrationRecordStatusView(SuperAdminMixin, APIView):
     """
     POST API for super admin to manage the instance of course registration record according to passed parameter.
     """
+    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
+    
     def post(self, request, *args, **kwargs):
         try:
-            if not self.has_super_admin_privileges(request):
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            # if not self.has_super_admin_privileges(request):
+            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
             manage_status = self.request.query_params.get('manage_status')
             if manage_status not in ["activate", "inactivate"]:

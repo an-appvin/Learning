@@ -1,6 +1,10 @@
 import threading
 import time
 from django.http import HttpResponseServerError
+from django.http import HttpResponseForbidden
+
+from core.custom_mixins import SuperAdminMixin
+
 
 class TimeoutMiddleware:
     def __init__(self, get_response):
@@ -29,3 +33,18 @@ class TimeoutMiddleware:
 
         # If the thread has finished processing, return the captured response
         return self.response
+
+
+# class CustomPermissionMiddleware(SuperAdminMixin):
+#     def __init__(self, get_response):
+#         self.get_response = get_response
+
+#     def __call__(self, request):
+#         # Perform permission checks based on request attributes
+#         if request.path.startswith('/lms/courses/') or request.path.startswith('/lms/course-register-record/') or request.path.startswith('/lms/dashboard/sa/'):
+#             if self.has_super_admin_privileges(request):
+#                 response = self.get_response(request)
+#                 return response
+#         return HttpResponseForbidden("Permission denied")
+
+

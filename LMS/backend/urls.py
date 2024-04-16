@@ -32,7 +32,7 @@ from .views.quizcontentviews import (
     ChoicesView,
     QuestionView,
     QuizTake,
-    dummy_quiz_index,
+    # dummy_quiz_index,
 )
 
 
@@ -69,6 +69,6 @@ urlpatterns = [
     path('question/<int:question_id>/choices/', ChoicesView.as_view(), name='question-choice'),
     path("<int:pk>/<slug:quiz_slug>/take/", QuizTake.as_view(), name="quiz_take"), #href="{% url 'quiz_take' pk=course.pk slug=quiz.slug %}
     #extra
-    path('quiz/redirect/<int:course_id>/', view=dummy_quiz_index, name='quiz_index'),
+    # path('quiz/redirect/<int:course_id>/', view=dummy_quiz_index, name='quiz_index'),
 
 ]

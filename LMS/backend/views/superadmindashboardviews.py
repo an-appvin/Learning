@@ -1,3 +1,4 @@
+from core.custom_permissions import SuperAdminPermission
 from core.custom_mixins import SuperAdminMixin
 from rest_framework import status
 from rest_framework.views import APIView
@@ -21,16 +22,19 @@ class ActiveRegisteredCustomerCountView(SuperAdminMixin,APIView):
     """
     GET API for super admin to get count active and inactive registrations.
     """
+    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
+    
     def get(self, request):
         try:
-            if not self.has_super_admin_privileges(request):
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            # if not self.has_super_admin_privileges(request):
+            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
             active_registration_count = CourseRegisterRecord.objects.filter(active=True, deleted_at__isnull=True).values('customer').distinct().count()
             print(active_registration_count)
             if active_registration_count == 0:
                 return Response({"message": "no active registration were found"}, status=status.HTTP_404_NOT_FOUND)
             serializer = ActiveRegistrationCountSerializer({'active_registered_customer_count': active_registration_count})
+            print(serializer.data)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             if isinstance(e, ValidationError):
@@ -49,11 +53,12 @@ class CountOfActiveRegistrationPerCoure(SuperAdminMixin,APIView):
         and for each course count instances from course registration records which are active =true, deleted_at =null
         and pass this data in response for each course send it's calculated count
     """
+    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
 
     def get(self, request):
         try:
-            if not self.has_super_admin_privileges(request):
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            # if not self.has_super_admin_privileges(request):
+            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
             active_courses = Course.objects.filter(active=True, deleted_at__isnull=True)
             if not active_courses:
@@ -67,7 +72,7 @@ class CountOfActiveRegistrationPerCoure(SuperAdminMixin,APIView):
                     active=True,
                     deleted_at__isnull=True
                 ).count()
-                if not active_registration_count.exists():
+                if active_registration_count is None:
                     return Response({"error": "Course Registration not found"}, status=status.HTTP_404_NOT_FOUND)
                 course_active_registration_counts.append({
                     'course_id': course.id,
@@ -84,11 +89,12 @@ class GraphOfProgressPerCourseView(SuperAdminMixin,APIView):
     """
     GET API for super admin to get count of completed, in progress and not-tarted status of courses separately.
     """
-
+    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
+    
     def get(self, request):
         try:
-            if not self.has_super_admin_privileges(request):
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            # if not self.has_super_admin_privileges(request):
+            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
             active_courses = Course.objects.filter(active=True, deleted_at__isnull=True)
             if not active_courses:
@@ -99,20 +105,23 @@ class GraphOfProgressPerCourseView(SuperAdminMixin,APIView):
                 completion_count = CourseCompletionStatusPerUser.objects.filter(
                     course=course,
                     active=True,
-                    completion_status=True,
-                    in_progress_status=False
+                    status='COMPLETED'
+                    # completion_status=True,
+                    # in_progress_status=False
                 ).count()
                 in_progress_count = CourseCompletionStatusPerUser.objects.filter(
                     course=course,
                     active=True,
-                    # completion_status=False,
-                    in_progress_status=True
+                    status='IN_PROGRESS'
+                    # # completion_status=False,
+                    # in_progress_status=True
                 ).count()
                 not_started_count = CourseCompletionStatusPerUser.objects.filter(
                     course=course,
                     active=True,
-                    completion_status=False,
-                    in_progress_status=True
+                    status='NOT_STARTED'
+                    # completion_status=False,
+                    # in_progress_status=True
                 ).count()
                 course_progress_counts.append({
                     'course_id': course.id,
@@ -134,10 +143,12 @@ class CourseCountView(SuperAdminMixin, APIView):
     GET API for super admin to get count of active and inactive courses separately.
     """
 
+    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
+    
     def get(self, request):
         try:
-            if not self.has_super_admin_privileges(request):
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            # if not self.has_super_admin_privileges(request):
+            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
             active_course_count = Course.objects.filter(active=True, deleted_at__isnull=True).count()
             inactive_course_count = Course.objects.filter(active=False, deleted_at__isnull=True).count()

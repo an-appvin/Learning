@@ -53,11 +53,14 @@ class ClientAdminMixin:
     def has_client_admin_privileges(self, request):
         client_admin_resources = {1, 3, 4, 6}  
         
-        # Check if the user is authenticated
-        if not request.user:
-            return False
+        # # Check if the user is authenticated
+        # if not request.user:
+        #     return False
         
-        user_privileges = UserRolePrivileges.objects.filter(role=request.user.role)
+        # user_privileges = UserRolePrivileges.objects.filter(role=request.user.role)
+        user = request.data.get('user')
+        print("client admin")
+        user_privileges = UserRolePrivileges.objects.filter(role= user['role']) # role= user.role
         privileged_resources = {privilege.resource.id for privilege in user_privileges}
         
         return client_admin_resources == privileged_resources

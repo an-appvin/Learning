@@ -4,6 +4,7 @@ from rest_framework import status
 from django.contrib import messages
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from core.custom_permissions import SuperAdminPermission
 from core.custom_mixins import (
     SuperAdminMixin)
 from rest_framework.exceptions import ValidationError
@@ -48,10 +49,13 @@ class QuestionView(SuperAdminMixin, APIView):
     POST API for super admin to create new instances of question for the quiz
     
     """
+    
+    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
+    
     def get(self, request, quiz_id, format=None):
         try:
-            if not self.has_super_admin_privileges(request) :
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            # if not self.has_super_admin_privileges(request) :
+            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
             questions = Question.objects.filter(
                 quizzes__id=quiz_id, 
@@ -67,8 +71,8 @@ class QuestionView(SuperAdminMixin, APIView):
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
     def post(self, request, course_id, *args, **kwargs):
-        if not self.has_super_admin_privileges(request) :
-            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        # if not self.has_super_admin_privileges(request) :
+        #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
         
         course = Course.objects.get(pk=course_id)
         if not course:
@@ -124,11 +128,12 @@ class ChoicesView(SuperAdminMixin, APIView):
     POST API for super admin to create new instances of choice for the question
     
     """
+    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
     
     def get(self, request, question_id, format=None):
         try:
-            if not self.has_super_admin_privileges(request) :
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            # if not self.has_super_admin_privileges(request) :
+            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
             choices = Choice.objects.filter(
                 question__id=question_id, 
@@ -144,8 +149,8 @@ class ChoicesView(SuperAdminMixin, APIView):
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request, question_id, *args, **kwargs):
-        if not self.has_super_admin_privileges(request) :
-            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        # if not self.has_super_admin_privileges(request) :
+        #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
 
         question = Question.objects.get(pk=question_id)
         if not question:
@@ -288,7 +293,7 @@ class QuizTake(FormView):
 
         return render(self.request, self.result_template_name, results)
 
-def dummy_quiz_index(request, course_id):
-    course = Course.objects.get(pk=course_id)
-    return render(request, 'quiz_index.html', {'course_id': course_id, 'course': course})
+# def dummy_quiz_index(request, course_id):
+#     course = Course.objects.get(pk=course_id)
+#     return render(request, 'quiz_index.html', {'course_id': course_id, 'course': course})
 

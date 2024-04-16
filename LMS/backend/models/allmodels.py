@@ -728,13 +728,24 @@ class CourseCompletionStatusPerUser(models.Model):
     in_progress status - completion_status = False, in_progress_status = True
     completed status - completion_status = True, in_progress_status = False
     """
-    """should get new instance when courseenrollment table get new instance
+    """should get new instance when course enrollment table get new instance
     """
+    NOT_STARTED = 'not_started'
+    IN_PROGRESS = 'in_progress'
+    COMPLETED = 'completed'
+
+    STATUS_CHOICES = [
+        (NOT_STARTED, 'Not Started'),
+        (IN_PROGRESS, 'In Progress'),
+        (COMPLETED, 'Completed'),
+    ]
+    
     id = models.AutoField(primary_key=True)
     enrolled_user = models.ForeignKey(User, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    completion_status = models.BooleanField(default=False)
-    in_progress_status = models.BooleanField(default=False)
+    # completion_status = models.BooleanField(default=False)
+    # in_progress_status = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=NOT_STARTED)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, auto_now_add=False, null=True)
     deleted_at = models.DateTimeField(null=True)

@@ -30,7 +30,7 @@ from rest_framework.exceptions import ValidationError
 from backend.models.coremodels import *
 from backend.serializers.courseserializers import *
 
-class CourseStructureView(SuperAdminMixin, ClientAdminMixin, ClientMixin, APIView):
+class CourseStructureView(SuperAdminMixin, APIView):
     """
     GET API for all users to list of courses structure for specific course
     
@@ -139,7 +139,7 @@ class CourseStructureView(SuperAdminMixin, ClientAdminMixin, ClientMixin, APIVie
 
 
 
-class ReadingMaterialView(SuperAdminMixin, ClientAdminMixin, ClientMixin, APIView):
+class ReadingMaterialView(SuperAdminMixin, ClientAdminMixin, APIView):
     """
     GET API for all users to instance of reading material for specific course while list of reading material for specific course for super admin too.
     
@@ -150,16 +150,6 @@ class ReadingMaterialView(SuperAdminMixin, ClientAdminMixin, ClientMixin, APIVie
     def get(self, request, course_id, format=None):
         
         try:
-            # user = request.user
-            # if not user:
-            #     return Response({"error": "Request body have no user"}, status=status.HTTP_400_BAD_REQUEST)
-            # if not self.has_super_admin_privileges(request):
-            #     actively_registered = CourseRegisterRecord.objects.filter(course=course_id, customer=user.customer.id, active=True).exists()
-            #     if not actively_registered:
-            #         actively_enrolled = CourseEnrollment.objects.filter(course=course_id, user=user.id, active=True).exists()
-            #         if not actively_enrolled:
-            #             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-            
             content_id = request.query_params.get('content_id')
             list_mode = request.query_params.get('list', '').lower() == 'true'  # Check if list mode is enabled
             if content_id:
@@ -167,9 +157,24 @@ class ReadingMaterialView(SuperAdminMixin, ClientAdminMixin, ClientMixin, APIVie
                 if not self.has_super_admin_privileges(request):
                     actively_enrolled = CourseEnrollment.objects.filter(course=course_id, user=user['id'], active=True).exists()
                     if not actively_enrolled:
-                        actively_registered = CourseRegisterRecord.objects.filter(course=course_id, customer=user['customer'], active=True).exists()
-                        if not self.has_client_admin_privileges and not actively_registered:
+                        if self.has_client_admin_privileges(request):
+                            actively_registered = CourseRegisterRecord.objects.filter(course=course_id, customer=user['customer'], active=True).exists()
+                            if not actively_registered:
+                                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+                        else:
                             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+                # user = request.user
+                # if not user:
+                #     return Response({"error": "Request body have no user"}, status=status.HTTP_400_BAD_REQUEST)
+                # if not self.has_super_admin_privileges(request):
+                #     actively_enrolled = CourseEnrollment.objects.filter(course=course_id, user=user.id, active=True).exists()
+                #     if not actively_enrolled:
+                #         if self.has_client_admin_privileges(request):
+                #             actively_registered = CourseRegisterRecord.objects.filter(course=course_id, customer=user.customer.id, active=True).exists()
+                #             if not actively_registered:
+                #                 return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+                #         else:
+                #             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
                 reading_material = UploadReadingMaterial.objects.get(
                     courses__id=course_id, 
                     id=content_id, 
@@ -253,9 +258,9 @@ class ReadingMaterialView(SuperAdminMixin, ClientAdminMixin, ClientMixin, APIVie
 
 
 
-class QuizView(SuperAdminMixin, ClientAdminMixin, ClientMixin,APIView):
+class QuizView(SuperAdminMixin, ClientAdminMixin, APIView):
     """
-        get: to retieve the quiz of course in url (for authorized all)
+        get: to retrieve the quiz of course in url (for authorized all)
         post: to create quiz instances for course in url (for super admin only)
     """
     def get(self, request, course_id,format=None):
@@ -264,11 +269,28 @@ class QuizView(SuperAdminMixin, ClientAdminMixin, ClientMixin,APIView):
             content_id = request.query_params.get('content_id')
             list_mode = request.query_params.get('list', '').lower() == 'true'  # Check if list mode is enabled
             if content_id:
-                user = request.user
-                actively_enrolled = CourseEnrollment.objects.filter(course=course_id, user=user.id, active=True).exists()
-                actively_registered = CourseRegisterRecord.objects.filter(course=course_id, customer=user.customer.id, active=True).exists()
-                if not self.has_super_admin_privileges(request) or not actively_enrolled or not actively_registered :
-                    return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+                user = request.data.get('user')
+                if not self.has_super_admin_privileges(request):
+                    actively_enrolled = CourseEnrollment.objects.filter(course=course_id, user=user['id'], active=True).exists()
+                    if not actively_enrolled:
+                        if self.has_client_admin_privileges(request):
+                            actively_registered = CourseRegisterRecord.objects.filter(course=course_id, customer=user['customer'], active=True).exists()
+                            if not actively_registered:
+                                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+                        else:
+                            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+                # user = request.user
+                # if not user:
+                #     return Response({"error": "Request body have no user"}, status=status.HTTP_400_BAD_REQUEST)
+                # if not self.has_super_admin_privileges(request):
+                #     actively_enrolled = CourseEnrollment.objects.filter(course=course_id, user=user.id, active=True).exists()
+                #     if not actively_enrolled:
+                #         if self.has_client_admin_privileges(request):
+                #             actively_registered = CourseRegisterRecord.objects.filter(course=course_id, customer=user.customer.id, active=True).exists()
+                #             if not actively_registered:
+                #                 return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+                #         else:
+                #             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
                 quiz = Quiz.objects.get(
                     courses__id=course_id, 
                     id=content_id, 

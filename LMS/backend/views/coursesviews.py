@@ -10,6 +10,7 @@ from rest_framework import status
 from django.db import transaction
 import pandas as pd
 
+from core.custom_permissions import SuperAdminPermission
 from backend.serializers.courseserializers import CourseDisplaySerializer
 from backend.serializers.registercourseserializers import (
     DerivedVersionActiveCourseListSerializer, 
@@ -41,6 +42,9 @@ from backend.serializers.courseserializers import (
 )
 
 filtered_display = ["active", "inactive", "all"]
+
+manage = ["activate", "inactivate","versioning"]
+
 class CourseView(SuperAdminMixin, APIView):
     """
     GET API for super admin to list of courses or single instance based on query parameters passed
@@ -117,7 +121,6 @@ class CourseView(SuperAdminMixin, APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-manage = ["activate", "inactivate","versioning"]
 class ManageCourseView(SuperAdminMixin, APIView):
     """
     POST API for super admin to manage the instance of course according to passed parameter.
@@ -128,10 +131,12 @@ class ManageCourseView(SuperAdminMixin, APIView):
     
     versioning : to create a new version of existing active course
     """
+    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
+    
     def post(self, request, *args, **kwargs):
         try:
-            if not self.has_super_admin_privileges(request):
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            # if not self.has_super_admin_privileges(request):
+            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
             manage = request.data.get('manage')
             
@@ -281,10 +286,12 @@ class FirstVersionActiveCourseListView(SuperAdminMixin, APIView):
     """
     GET API for super admin to list of courses with original_course == null and version == 1
     """
+    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
+    
     def get(self, request):
         try:
-            if not self.has_super_admin_privileges(request):
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            # if not self.has_super_admin_privileges(request):
+            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
             courses = Course.objects.filter(original_course__isnull=True, version_number=1, active=True).order_by('-updated_at')
             if not courses:
@@ -302,10 +309,12 @@ class DerivedVersionActiveCourseListView(SuperAdminMixin, APIView):
     """
     GET API for super admin to list of courses with original_course != null and version != 1 for course in url
     """
+    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
+    
     def get(self, request, course_id):
         try:
-            if not self.has_super_admin_privileges(request):
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            # if not self.has_super_admin_privileges(request):
+            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
             derived_courses = Course.objects.filter(original_course=course_id, active=True).order_by('version_number','-updated_at')
             if not derived_courses:

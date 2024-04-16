@@ -34,9 +34,10 @@ class ActiveRegistrationCountSerializer(serializers.Serializer):
     """
     active_registered_customer_count = serializers.IntegerField()
     
-    def active_registered_customer_count(self, value):
+    def validate_active_registered_customer_count(self, value):
         """
         Validate the active_registered_customer_count field.
         """
         if value < 0:
             raise serializers.ValidationError("Active Registration count cannot be negative.")
+        return value
