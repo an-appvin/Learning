@@ -34,6 +34,20 @@ from .views.quizcontentviews import (
     QuizTake,
     dummy_quiz_index,
 )
+from .views.userdashboardviews import (
+    CountCoursesStatusView,
+    CreateCourseCompletionStatusPerUserView,
+    CreateQuizScoreView,
+   
+    # EmployeeDashboard,
+    UpdateCompleteQuizCountView,
+    UpdateTotalScorePerCourseView,
+    UpdateCourseCompletionStatusPerUserView,
+    DisplayClientCourseProgressView,
+    
+    
+
+)
 
 
 urlpatterns = [
@@ -70,5 +84,14 @@ urlpatterns = [
     path("<int:pk>/<slug:quiz_slug>/take/", QuizTake.as_view(), name="quiz_take"), #href="{% url 'quiz_take' pk=course.pk slug=quiz.slug %}
     #extra
     path('quiz/redirect/<int:course_id>/', view=dummy_quiz_index, name='quiz_index'),
+
+    path('create-course-completion-status/', CreateCourseCompletionStatusPerUserView.as_view(), name='create_course_completion_status'),
+    path('create-quiz-score/', CreateQuizScoreView.as_view(), name='create_quiz_score'),
+    path('update-complete-quiz-count/', UpdateCompleteQuizCountView.as_view(), name='update_complete_quiz_count'),
+    path('update-total-score-per-course/', UpdateTotalScorePerCourseView.as_view(), name='update_total_score_per_course'),
+    path('update-course-completion-status/', UpdateCourseCompletionStatusPerUserView.as_view(), name='update_course_completion_status'),
+    path('display-client-course-progress/', DisplayClientCourseProgressView.as_view(), name='display_client_course_progress'),
+    path('count-courses-status/', CountCoursesStatusView.as_view(), name='count_client_completed_courses'),
+    
 
 ]
