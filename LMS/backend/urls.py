@@ -57,9 +57,9 @@ urlpatterns = [
     path('course/<int:course_id>/quiz/', QuizView.as_view(), name='quiz'), #9
     
     # quizcontentviews.py views urls
-    path('quiz/<int:quiz_id>/question/', QuestionView.as_view(), name='reading-material'), #10
+    path('course/<int:course_id>/quiz/<int:quiz_id>/question/', QuestionView.as_view(), name='reading-material'), #10
     path('question/<int:question_id>/choices/', ChoicesView.as_view(), name='question-choice'),  #11
-    path("<int:pk>/<slug:quiz_slug>/take/", QuizTake.as_view(), name="quiz_take"), #12      href="{% url 'quiz_take' pk=course.pk slug=quiz.slug %}
+    path('<int:pk>/quiz/<slug:quiz_slug>/take/', QuizTake.as_view(), name="quiz_take"), #12      href="{% url 'quiz_take' pk=course.pk slug=quiz.slug %}
         
     #superadmindashboardviews.py views url
     path('dashboard/sa/registration/count/', ActiveRegisteredCustomerCountView.as_view(), name='active-registration-count'),  #13

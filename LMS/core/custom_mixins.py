@@ -28,7 +28,6 @@ allowed_resources:
 '''
 
 class SuperAdminMixin:
-    # permission_classes = [permissions.IsAuthenticated]
 
     def has_super_admin_privileges(self, request):
         super_admin_resources = {1, 2, 4, 5, 6}  
@@ -48,7 +47,6 @@ class SuperAdminMixin:
         return super_admin_resources == privileged_resources
     
 class ClientAdminMixin:
-    # permission_classes = [permissions.IsAuthenticated]
     
     def has_client_admin_privileges(self, request):
         client_admin_resources = {1, 3, 4, 6}  
@@ -66,14 +64,13 @@ class ClientAdminMixin:
         return client_admin_resources == privileged_resources
     
 class ClientMixin:
-    # permission_classes = [permissions.IsAuthenticated]
     
     def has_client_privileges(self, request):
         client_resources = {1, 4, 6} 
         
-        # Check if the user is authenticated
-        if not request.user:
-            return False
+        # # Check if the user is authenticated
+        # if not request.user:
+        #     return False
         
         user_privileges = UserRolePrivileges.objects.filter(role=request.user.role)
         # user = request.user

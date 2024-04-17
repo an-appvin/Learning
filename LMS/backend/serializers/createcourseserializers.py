@@ -142,6 +142,8 @@ class CreateUploadVideoSerializer(serializers.ModelSerializer):
         fields = ['title', 'video', 'summary']
 
 
+
+
 class CreateQuizSerializer(serializers.ModelSerializer):
     class Meta:
         model = Quiz
@@ -163,6 +165,12 @@ class CreateQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = ['figure', 'content', 'explanation', 'choice_order']
+        
+    def validate(self, data):
+        # Check if course is provided
+        if 'content' not in data:
+            raise serializers.ValidationError("content is required")
+        return data
 
 
 class UploadReadingMaterialSerializer(serializers.ModelSerializer):
