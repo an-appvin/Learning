@@ -15,6 +15,7 @@ from backend.models.allmodels import (
     Choice,
     Course,
     CourseStructure,
+    Progress,
     Quiz,
     Question,
     QuizAttemptHistory,
@@ -42,21 +43,17 @@ from backend.forms import (
     QuestionForm,
 )
 
-class QuestionView(SuperAdminMixin, APIView):
+class QuestionView(APIView):
     """
     GET API for super admin to list of questions of specific quiz
     
     POST API for super admin to create new instances of question for the quiz
     
     """
-    
-    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
+    permission_classes = [SuperAdminPermission]
     
     def get(self, request, quiz_id, format=None):
         try:
-            # if not self.has_super_admin_privileges(request) :
-            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-            
             questions = Question.objects.filter(
                 quizzes__id=quiz_id, 
                 active=True, 
@@ -71,9 +68,6 @@ class QuestionView(SuperAdminMixin, APIView):
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
     def post(self, request, course_id, *args, **kwargs):
-        # if not self.has_super_admin_privileges(request) :
-        #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-        
         course = Course.objects.get(pk=course_id)
         if not course:
             return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -121,20 +115,17 @@ class QuestionView(SuperAdminMixin, APIView):
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class ChoicesView(SuperAdminMixin, APIView):
+class ChoicesView(APIView):
     """
     GET API for super admin to list of choices of specific question
     
     POST API for super admin to create new instances of choice for the question
     
     """
-    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
+    permission_classes = [SuperAdminPermission] 
     
     def get(self, request, question_id, format=None):
         try:
-            # if not self.has_super_admin_privileges(request) :
-            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-            
             choices = Choice.objects.filter(
                 question__id=question_id, 
                 active=True, 
@@ -149,9 +140,6 @@ class ChoicesView(SuperAdminMixin, APIView):
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request, question_id, *args, **kwargs):
-        # if not self.has_super_admin_privileges(request) :
-        #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
         question = Question.objects.get(pk=question_id)
         if not question:
             return  Response({"error": "Question not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -183,10 +171,10 @@ class QuizTake(FormView):
         if quiz_questions_count <= 0:
             messages.warning(request, f"Question set of the quiz is empty. try later!")
             return redirect("course-structure", self.course.id) # redirecting to previous page as this quiz can't be started.
-# send here SingleCourseStructureListDisplayView
         # =================================================================
-        user_header = request.headers.get("user")
-        enrolled_user = get_object_or_404(User, pk=13)
+        user = request.data.get('user')
+        user_id = user['id']
+        enrolled_user = get_object_or_404(User, pk=user_id)
         # ===============================
         # enrolled_user = request.user
         self.sitting = QuizAttemptHistory.objects.user_sitting(
@@ -239,8 +227,9 @@ class QuizTake(FormView):
 
     def form_valid_user(self, form):
         # =================================================================
-        user_header = self.request.headers.get("user")
-        enrolled_user = get_object_or_404(User, pk=13)
+        user = self.request.data.get('user')
+        user_id = user['id']
+        enrolled_user = get_object_or_404(User, pk=user_id)
         # ===============================
         # enrolled_user = request.user
         progress, _ = Progress.objects.get_or_create(enrolled_user=enrolled_user)

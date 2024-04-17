@@ -10,16 +10,11 @@ from rest_framework import status
 from django.db import transaction
 import pandas as pd
 
-from core.custom_permissions import SuperAdminPermission
+from core.custom_permissions import SuperAdminOrGetOnly, SuperAdminPermission
 from backend.serializers.courseserializers import CourseDisplaySerializer
 from backend.serializers.registercourseserializers import (
     DerivedVersionActiveCourseListSerializer, 
     FirstVersionActiveCourseListSerializer
-)
-from core.custom_mixins import (
-    ClientAdminMixin,
-    ClientMixin,
-    SuperAdminMixin
 )
 from backend.models.allmodels import (
     Course,
@@ -40,18 +35,16 @@ from backend.serializers.courseserializers import (
     CourseStructureSerializer,
 
 )
+from core.constants import filtered_display_list, manage_course_list
 
-filtered_display = ["active", "inactive", "all"]
 
-manage = ["activate", "inactivate","versioning"]
-
-class CourseView(SuperAdminMixin, APIView):
+class CourseView(APIView):
     """
     GET API for super admin to list of courses or single instance based on query parameters passed
     
     POST API for super admin to create new instances of course
     """
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [SuperAdminOrGetOnly]
 
     def get(self, request, *args, **kwargs):
         try:
@@ -71,7 +64,7 @@ class CourseView(SuperAdminMixin, APIView):
                 return Response(serializer.data, status=status.HTTP_200_OK)
 
             if filtered_display:
-                if filtered_display not in ["active", "inactive", "all"]:
+                if filtered_display not in filtered_display_list : #["active", "inactive", "all"]
                     return Response({"error": "Invalid filtered_display parameter"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 queryset = Course.objects.filter(deleted_at__isnull=True).order_by('-created_at')
@@ -79,14 +72,7 @@ class CourseView(SuperAdminMixin, APIView):
                 if filtered_display == "active":
                     queryset = queryset.filter(active=True)
                 elif filtered_display == "inactive":
-                    if not self.has_super_admin_privileges(request):
-                        return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-                    
                     queryset = queryset.filter(active=False)
-                elif filtered_display == "all":
-                    if not self.has_super_admin_privileges(request):
-                        return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-                    
                 course_list = queryset.all()
                 
                 if not course_list.exists():
@@ -101,9 +87,6 @@ class CourseView(SuperAdminMixin, APIView):
 
     def post(self, request, *args, **kwargs):        
         try:
-            if not self.has_super_admin_privileges(request):
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-            
             data = request.data
             if not data:
                 return Response({"error": "Request body is empty"}, status=status.HTTP_400_BAD_REQUEST)
@@ -121,7 +104,7 @@ class CourseView(SuperAdminMixin, APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class ManageCourseView(SuperAdminMixin, APIView):
+class ManageCourseView(APIView):
     """
     POST API for super admin to manage the instance of course according to passed parameter.
     
@@ -131,16 +114,13 @@ class ManageCourseView(SuperAdminMixin, APIView):
     
     versioning : to create a new version of existing active course
     """
-    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
+    permission_classes = [SuperAdminPermission]
     
     def post(self, request, *args, **kwargs):
         try:
-            # if not self.has_super_admin_privileges(request):
-            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-            
             manage = request.data.get('manage')
             
-            if manage not in ["activate", "inactivate","versioning"]:
+            if manage not in manage_course_list:
                 return Response({"error": "Invalid manage_status in request"}, status=status.HTTP_400_BAD_REQUEST)
             course_id = request.data.get('course_id')
             if not course_id:
@@ -282,17 +262,14 @@ class ManageCourseView(SuperAdminMixin, APIView):
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class FirstVersionActiveCourseListView(SuperAdminMixin, APIView):
+class FirstVersionActiveCourseListView(APIView):
     """
     GET API for super admin to list of courses with original_course == null and version == 1
     """
-    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
+    permission_classes = [SuperAdminPermission]
     
     def get(self, request):
         try:
-            # if not self.has_super_admin_privileges(request):
-            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-            
             courses = Course.objects.filter(original_course__isnull=True, version_number=1, active=True).order_by('-updated_at')
             if not courses:
                 return Response({"error": "No active first version courses found."}, status=status.HTTP_404_NOT_FOUND)
@@ -305,17 +282,14 @@ class FirstVersionActiveCourseListView(SuperAdminMixin, APIView):
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class DerivedVersionActiveCourseListView(SuperAdminMixin, APIView):
+class DerivedVersionActiveCourseListView(APIView):
     """
     GET API for super admin to list of courses with original_course != null and version != 1 for course in url
     """
-    permission_classes = [SuperAdminPermission] #IsAuthenticated, 
+    permission_classes = [SuperAdminPermission] 
     
     def get(self, request, course_id):
         try:
-            # if not self.has_super_admin_privileges(request):
-            #     return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-            
             derived_courses = Course.objects.filter(original_course=course_id, active=True).order_by('version_number','-updated_at')
             if not derived_courses:
                 return Response({"error": "No active derived courses found for the provided course ID."}, status=status.HTTP_404_NOT_FOUND)

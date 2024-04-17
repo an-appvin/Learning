@@ -1,10 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from core.custom_mixins import (
-    ClientAdminMixin,
-    ClientMixin,
-    SuperAdminMixin)
+from core.custom_permissions import CourseContentPermissions, SuperAdminOrGetOnly
 from rest_framework import status
 from backend.models.allmodels import (
     Course,
@@ -30,19 +27,19 @@ from rest_framework.exceptions import ValidationError
 from backend.models.coremodels import *
 from backend.serializers.courseserializers import *
 
-class CourseStructureView(SuperAdminMixin, APIView):
+class CourseStructureView(APIView):
     """
     GET API for all users to list of courses structure for specific course
     
     POST API for super admin to create new instances of course structure while editing existing too
     
     """
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [SuperAdminOrGetOnly]
     
     def get(self, request, course_id, format=None):
         try:
-            course_structures = CourseStructure.objects.filter(course_id=course_id, active=True, deleted_at__isnull=True)
-            if course_structures.exists():
+            course_structures = CourseStructure.objects.filter(course_id=course_id, deleted_at__isnull=True) # active=True,
+            if course_structures is not None:
                 serializer = CourseStructureSerializer(course_structures, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
@@ -54,10 +51,6 @@ class CourseStructureView(SuperAdminMixin, APIView):
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request, course_id, *args, **kwargs):
-
-        if not self.has_super_admin_privileges(request):
-            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-
         course = Course.objects.get(pk=course_id)
         if not course:
             return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -139,42 +132,20 @@ class CourseStructureView(SuperAdminMixin, APIView):
 
 
 
-class ReadingMaterialView(SuperAdminMixin, ClientAdminMixin, APIView):
+class ReadingMaterialView(APIView):
     """
     GET API for all users to instance of reading material for specific course while list of reading material for specific course for super admin too.
     
     POST API for super admin to create new instances of course structure while editing existing too
     
     """
-    
+    permission_classes = [CourseContentPermissions]
     def get(self, request, course_id, format=None):
         
         try:
             content_id = request.query_params.get('content_id')
             list_mode = request.query_params.get('list', '').lower() == 'true'  # Check if list mode is enabled
             if content_id:
-                user = request.data.get('user')
-                if not self.has_super_admin_privileges(request):
-                    actively_enrolled = CourseEnrollment.objects.filter(course=course_id, user=user['id'], active=True).exists()
-                    if not actively_enrolled:
-                        if self.has_client_admin_privileges(request):
-                            actively_registered = CourseRegisterRecord.objects.filter(course=course_id, customer=user['customer'], active=True).exists()
-                            if not actively_registered:
-                                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-                        else:
-                            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-                # user = request.user
-                # if not user:
-                #     return Response({"error": "Request body have no user"}, status=status.HTTP_400_BAD_REQUEST)
-                # if not self.has_super_admin_privileges(request):
-                #     actively_enrolled = CourseEnrollment.objects.filter(course=course_id, user=user.id, active=True).exists()
-                #     if not actively_enrolled:
-                #         if self.has_client_admin_privileges(request):
-                #             actively_registered = CourseRegisterRecord.objects.filter(course=course_id, customer=user.customer.id, active=True).exists()
-                #             if not actively_registered:
-                #                 return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-                #         else:
-                #             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
                 reading_material = UploadReadingMaterial.objects.get(
                     courses__id=course_id, 
                     id=content_id, 
@@ -185,8 +156,6 @@ class ReadingMaterialView(SuperAdminMixin, ClientAdminMixin, APIView):
                     serializer = ReadingMaterialSerializer(reading_material)
                     return Response(serializer.data, status=status.HTTP_200_OK)
             elif list_mode:
-                if not self.has_super_admin_privileges(request):
-                    return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
                 reading_materials = UploadReadingMaterial.objects.filter(
                     courses__id=course_id, 
                     active=True, 
@@ -203,10 +172,6 @@ class ReadingMaterialView(SuperAdminMixin, ClientAdminMixin, APIView):
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request, course_id, *args, **kwargs):
-        
-        if not self.has_super_admin_privileges(request):
-            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-        
         course = Course.objects.get(pk=course_id)
         if not course:
             return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -258,39 +223,19 @@ class ReadingMaterialView(SuperAdminMixin, ClientAdminMixin, APIView):
 
 
 
-class QuizView(SuperAdminMixin, ClientAdminMixin, APIView):
+class QuizView(APIView):
     """
         get: to retrieve the quiz of course in url (for authorized all)
         post: to create quiz instances for course in url (for super admin only)
     """
+    permission_classes = [CourseContentPermissions]
+    
     def get(self, request, course_id,format=None):
         try:
             
             content_id = request.query_params.get('content_id')
             list_mode = request.query_params.get('list', '').lower() == 'true'  # Check if list mode is enabled
             if content_id:
-                user = request.data.get('user')
-                if not self.has_super_admin_privileges(request):
-                    actively_enrolled = CourseEnrollment.objects.filter(course=course_id, user=user['id'], active=True).exists()
-                    if not actively_enrolled:
-                        if self.has_client_admin_privileges(request):
-                            actively_registered = CourseRegisterRecord.objects.filter(course=course_id, customer=user['customer'], active=True).exists()
-                            if not actively_registered:
-                                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-                        else:
-                            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-                # user = request.user
-                # if not user:
-                #     return Response({"error": "Request body have no user"}, status=status.HTTP_400_BAD_REQUEST)
-                # if not self.has_super_admin_privileges(request):
-                #     actively_enrolled = CourseEnrollment.objects.filter(course=course_id, user=user.id, active=True).exists()
-                #     if not actively_enrolled:
-                #         if self.has_client_admin_privileges(request):
-                #             actively_registered = CourseRegisterRecord.objects.filter(course=course_id, customer=user.customer.id, active=True).exists()
-                #             if not actively_registered:
-                #                 return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-                #         else:
-                #             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
                 quiz = Quiz.objects.get(
                     courses__id=course_id, 
                     id=content_id, 
@@ -303,8 +248,6 @@ class QuizView(SuperAdminMixin, ClientAdminMixin, APIView):
                 else:
                     return Response({"error": "No quiz found for the specified ID"}, status=status.HTTP_404_NOT_FOUND)
             elif list_mode:
-                if not self.has_super_admin_privileges(request):
-                    return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
                 quizzes = Quiz.objects.filter(
                     courses__id=course_id, 
                     active=True, 
@@ -321,9 +264,6 @@ class QuizView(SuperAdminMixin, ClientAdminMixin, APIView):
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request, course_id, *args, **kwargs):
-        if not self.has_super_admin_privileges(request):
-            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-        
         course = Course.objects.get(pk=course_id)
         if not course:
             return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
