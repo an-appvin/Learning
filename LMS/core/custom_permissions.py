@@ -55,10 +55,11 @@ class CourseContentPermissions(permissions.BasePermission, SuperAdminMixin, Clie
         
         if request.method == 'GET':
             user = request.data.get('user')
-            course_id = request.kwargs.get('course_id')
+            course_id = view.kwargs.get('course_id')
             content_id = request.query_params.get('content_id')
             list_mode = request.query_params.get('list', '').lower() == 'true'
-            if content_id or not list_mode :
+            count_calculator = request.query_params.get('count_calculator', '').lower() == 'true'
+            if content_id or not list_mode or not count_calculator:
                 is_actively_enrolled = CourseEnrollment.objects.filter(course=course_id, user=user['id'], active=True).exists()
                 if is_actively_enrolled:
                     return True

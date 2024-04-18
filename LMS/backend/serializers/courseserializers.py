@@ -248,3 +248,31 @@ class ChoicesListPerQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Choice
         fields = ['id', 'choice', 'correct']
+
+class ReadingMaterialCountPerCourseSerializer(serializers.Serializer):
+    """
+    Serializer for the active registration count.
+    """
+    reading_material_count = serializers.IntegerField()
+    
+    def validate_reading_material_count(self, value):
+        """
+        Validate the reading_material_count field.
+        """
+        if value < 0:
+            raise serializers.ValidationError(" Reading Material count cannot be negative.")
+        return value
+
+class QuizCountPerCourseSerializer(serializers.Serializer):
+    """
+    Serializer for the active registration count.
+    """
+    quiz_count = serializers.IntegerField()
+    
+    def validate_quiz_count(self, value):
+        """
+        Validate the quiz_count field.
+        """
+        if value < 0:
+            raise serializers.ValidationError(" Quiz count cannot be negative.")
+        return value

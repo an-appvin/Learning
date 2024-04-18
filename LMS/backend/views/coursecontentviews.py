@@ -131,7 +131,6 @@ class CourseStructureView(APIView):
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 class ReadingMaterialView(APIView):
     """
     GET API for all users to instance of reading material for specific course while list of reading material for specific course for super admin too.
@@ -144,7 +143,17 @@ class ReadingMaterialView(APIView):
         
         try:
             content_id = request.query_params.get('content_id')
+            count_calculator = request.query_params.get('count_calculator', '').lower() == 'true'
             list_mode = request.query_params.get('list', '').lower() == 'true'  # Check if list mode is enabled
+            if count_calculator:
+                if course_id:
+                    reading_material_count = UploadReadingMaterial.objects.filter(courses__id=course_id, active=True, deleted_at__isnull=True).count()
+                    if reading_material_count is None:
+                        return Response({"message": " no Reading material found"}, status=status.HTTP_404_NOT_FOUND)
+                    serializer = ReadingMaterialCountPerCourseSerializer({'reading_material_count': reading_material_count})
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                else:
+                    return Response({"error": "no course id was passed in parameters "}, status=status.HTTP_400_BAD_REQUEST)
             if content_id:
                 reading_material = UploadReadingMaterial.objects.get(
                     courses__id=course_id, 
@@ -222,7 +231,6 @@ class ReadingMaterialView(APIView):
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 class QuizView(APIView):
     """
         get: to retrieve the quiz of course in url (for authorized all)
@@ -235,6 +243,16 @@ class QuizView(APIView):
             
             content_id = request.query_params.get('content_id')
             list_mode = request.query_params.get('list', '').lower() == 'true'  # Check if list mode is enabled
+            count_calculator = request.query_params.get('count_calculator', '').lower() == 'true'
+            if count_calculator:
+                if course_id:
+                    quiz_count = Quiz.objects.filter(courses__id=course_id, active=True, deleted_at__isnull=True).count()
+                    if quiz_count is None:
+                        return Response({"message": " no quiz found"}, status=status.HTTP_404_NOT_FOUND)
+                    serializer = QuizCountPerCourseSerializer({'quiz_count': quiz_count})
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                else:
+                    return Response({"error": "no course id was passed in parameters "}, status=status.HTTP_400_BAD_REQUEST)
             if content_id:
                 quiz = Quiz.objects.get(
                     courses__id=course_id, 
