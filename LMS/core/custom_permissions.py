@@ -18,6 +18,12 @@ class SuperAdminPermission(SuperAdminMixin, permissions.BasePermission):
         print('SuperAdminPermission')
         privilege_response = self.has_super_admin_privileges(request)
         return privilege_response
+
+class ClientAdminPermission(ClientAdminMixin, permissions.BasePermission):
+    def has_permission(self, request, view):
+        print('ClientAdminPermission')
+        privilege_response = self.has_client_admin_privileges(request)
+        return privilege_response
     
 class SuperAdminOrGetOnly(SuperAdminMixin,permissions.BasePermission):
     """

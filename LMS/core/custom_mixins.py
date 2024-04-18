@@ -71,8 +71,8 @@ class ClientMixin:
         # # Check if the user is authenticated
         # if not request.user:
         #     return False
-        
-        user_privileges = UserRolePrivileges.objects.filter(role=request.user.role)
+        user = request.data.get('user')
+        user_privileges = UserRolePrivileges.objects.filter(role= user['role']) # role= user.role
         # user = request.user
         # user_privileges = UserRolePrivileges.objects.filter(role= user.role)
         privileged_resources = {privilege.resource.id for privilege in user_privileges}
