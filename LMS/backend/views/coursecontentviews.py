@@ -38,7 +38,7 @@ class CourseStructureView(APIView):
     
     def get(self, request, course_id, format=None):
         try:
-            course_structures = CourseStructure.objects.filter(course_id=course_id, deleted_at__isnull=True) # active=True,
+            course_structures = CourseStructure.objects.filter(course_id=course_id,active=True, deleted_at__isnull=True) # active=True,
             if course_structures is not None:
                 serializer = CourseStructureSerializer(course_structures, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -197,31 +197,26 @@ class ReadingMaterialView(APIView):
                 # Set additional fields
                 serializer.validated_data['courses'] = [course_id]
                 reading_material = serializer.save()
-                # If original_course is null, only save reading material
-                if course.original_course is None:
-                    return Response({"message": "Reading material created successfully"}, status=status.HTTP_201_CREATED)
-                else:
-                    # If original_course is not null, also create a CourseStructure entry
-                    try:
-                        last_order_number = CourseStructure.objects.filter(course=course).latest('order_number').order_number
-                    except CourseStructure.DoesNotExist:
-                        last_order_number = 0
+                try:
+                    last_order_number = CourseStructure.objects.filter(course=course).latest('order_number').order_number
+                except CourseStructure.DoesNotExist:
+                    last_order_number = 0
                     print('starting with course structure')
                     # Create new CourseStructure instance
-                    course_structure_data = {
+                course_structure_data = {
                         # 'course': course_id,
                         'course' : course_id,
                         'order_number': last_order_number + 1,
                         'content_type': 'reading',
                         'content_id': reading_material.pk
-                    }
-                    print(course_structure_data)
-                    course_structure_serializer = CreateCourseStructureSerializer(data=course_structure_data)
-                    if course_structure_serializer.is_valid():
-                        course_structure_serializer.save()
-                        return Response({"message": "Reading material created successfully"}, status=status.HTTP_201_CREATED)
-                    else:
-                        return Response({"error": course_structure_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                }
+                print(course_structure_data)
+                course_structure_serializer = CreateCourseStructureSerializer(data=course_structure_data)
+                if course_structure_serializer.is_valid():
+                    course_structure_serializer.save()
+                    return Response({"message": "Reading material created successfully"}, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({"error": course_structure_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
@@ -229,6 +224,7 @@ class ReadingMaterialView(APIView):
                     return Response({"error": "Validation Error: " + str(e)}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 class QuizView(APIView):
@@ -300,28 +296,23 @@ class QuizView(APIView):
             if serializer.is_valid():
                 quiz = serializer.save()
                 course.quizzes.add(quiz)
-                # If original_course is null, only save quiz
-                if course.original_course is None:
-                    return Response({"message": "Quiz created successfully"}, status=status.HTTP_201_CREATED)
-                else:
-                    # If original_course is not null, also create a CourseStructure entry
-                    try:
-                        last_order_number = CourseStructure.objects.filter(course=course).latest('order_number').order_number
-                    except CourseStructure.DoesNotExist:
-                        last_order_number = 0
+                try:
+                    last_order_number = CourseStructure.objects.filter(course=course).latest('order_number').order_number
+                except CourseStructure.DoesNotExist:
+                    last_order_number = 0
                     # Create new CourseStructure instance
-                    course_structure_data = {
+                course_structure_data = {
                         'course': course_id,
                         'order_number': last_order_number + 1,
                         'content_type': 'quiz',
                         'content_id': quiz.pk
-                    }
-                    course_structure_serializer = CreateCourseStructureSerializer(data=course_structure_data)
-                    if course_structure_serializer.is_valid():
-                        course_structure_serializer.save()
-                        return Response({"message": "Quiz created successfully"}, status=status.HTTP_201_CREATED)
-                    else:
-                        return Response({"error": course_structure_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                }
+                course_structure_serializer = CreateCourseStructureSerializer(data=course_structure_data)
+                if course_structure_serializer.is_valid():
+                    course_structure_serializer.save()
+                    return Response({"message": "Quiz created successfully"}, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({"error": course_structure_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
