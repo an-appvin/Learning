@@ -60,7 +60,7 @@ class QuestionView(APIView):
                 quizzes__id=quiz_id, 
                 active=True, 
                 deleted_at__isnull=True
-            )
+            ).order_by('created_at')
             serializer = QuestionListPerQuizSerializer(questions, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
@@ -158,7 +158,7 @@ class ChoicesView(APIView):
                 question__id=question_id, 
                 active=True, 
                 deleted_at__isnull=True
-            )
+            ).order_by('created_at')
             serializer = ChoicesListPerQuestionSerializer(choices, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:

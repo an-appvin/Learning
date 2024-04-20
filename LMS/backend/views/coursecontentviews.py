@@ -38,7 +38,7 @@ class CourseStructureView(APIView):
     
     def get(self, request, course_id, format=None):
         try:
-            course_structures = CourseStructure.objects.filter(course_id=course_id,active=True, deleted_at__isnull=True) # active=True,
+            course_structures = CourseStructure.objects.filter(course_id=course_id,active=True, deleted_at__isnull=True).order_by('-created_at') # active=True,
             if course_structures is not None:
                 serializer = CourseStructureSerializer(course_structures, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -169,7 +169,7 @@ class ReadingMaterialView(APIView):
                     courses__id=course_id, 
                     active=True, 
                     deleted_at__isnull=True
-                )
+                ).order_by('-uploaded_at')
                 serializer = ReadingMaterialListPerCourseSerializer(reading_materials, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
@@ -266,7 +266,7 @@ class QuizView(APIView):
                     courses__id=course_id, 
                     active=True, 
                     deleted_at__isnull=True
-                )
+                ).order_by('-created_at')
                 serializer = QuizListPerCourseSerializer(quizzes, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
