@@ -225,52 +225,54 @@ class ReadingMaterialView(APIView):
                 else:
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-def put(self, request, course_id, *args, **kwargs):
-    content_id = request.query_params.get('content_id')
-    course = Course.objects.get(id=content_id)
-    reading_material = UploadReadingMaterial.objects.get(
-            courses__id=course_id, 
-            id=content_id, 
-            active=True, 
-            deleted_at__isnull=True
-        )
-    if reading_material is None:
-        return Response({"error": "Reading material not found"}, status=status.HTTP_404_NOT_FOUND)
-    
-    edit_type = request.query_params.get('edit_type')
-    if edit_type not in ['content', 'status']:
-        return Response({"error": "Invalid edit_type in query parameter"}, status=status.HTTP_400_BAD_REQUEST)
+    def put(self, request, course_id, *args, **kwargs):
+        content_id = request.query_params.get('content_id')
+        course = Course.objects.get(id=content_id)
+        if course.active == True:
+            return Response({"error": 'we can not update active course'}, status=status.HTTP_403_FORBIDDEN)
+        reading_material = UploadReadingMaterial.objects.get(
+                courses__id=course_id, 
+                id=content_id, 
+                active=True, 
+                deleted_at__isnull=True
+            )
+        if reading_material is None:
+            return Response({"error": "Reading material not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        edit_type = request.query_params.get('edit_type')
+        if edit_type not in ['content', 'status']:
+            return Response({"error": "Invalid edit_type in query parameter"}, status=status.HTTP_400_BAD_REQUEST)
 
-    if edit_type == 'content':
-        # Code for editing content
-        pass
-    
-    elif edit_type == 'status':
-        if reading_material.active:
-            reading_material.active = False
-            course_structure = CourseStructure.objects.filter(content_id=content_id, content_type='reading', active=True, deleted_at__isnull=True)
-            course_structure.update(active=False)
-        else:
-            reading_material.active = True
-            course_structure = CourseStructure.objects.filter(content_id=content_id, content_type='reading', active=False, deleted_at__isnull=True)
-            try:
-                last_order_number = CourseStructure.objects.filter(course=course).latest('order_number').order_number
-            except CourseStructure.DoesNotExist:
-                    last_order_number = 0
-            course_structure_data = {
-                'course': course_id,
-                'order_number': last_order_number + 1,
-                'content_type': 'reading',
-                'content_id': reading_material.pk
-            }
-            course_structure_serializer = CreateCourseStructureSerializer(data=course_structure_data)
-            if course_structure_serializer.is_valid():
-                course_structure_serializer.save()
+        if edit_type == 'content':
+            # Code for editing content
+            pass
+        
+        elif edit_type == 'status':
+            if reading_material.active:
+                reading_material.active = False
+                course_structure = CourseStructure.objects.filter(content_id=content_id, content_type='reading', active=True, deleted_at__isnull=True)
+                course_structure.update(active=False)
             else:
-                return Response({"error": course_structure_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-    
-    reading_material.save()
-    return Response({"message": "Reading material status updated successfully"}, status=status.HTTP_200_OK)
+                reading_material.active = True
+                course_structure = CourseStructure.objects.filter(content_id=content_id, content_type='reading', active=False, deleted_at__isnull=True)
+                try:
+                    last_order_number = CourseStructure.objects.filter(course=course).latest('order_number').order_number
+                except CourseStructure.DoesNotExist:
+                        last_order_number = 0
+                course_structure_data = {
+                    'course': course_id,
+                    'order_number': last_order_number + 1,
+                    'content_type': 'reading',
+                    'content_id': reading_material.pk
+                }
+                course_structure_serializer = CreateCourseStructureSerializer(data=course_structure_data)
+                if course_structure_serializer.is_valid():
+                    course_structure_serializer.save()
+                else:
+                    return Response({"error": course_structure_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        reading_material.save()
+        return Response({"message": "Reading material status updated successfully"}, status=status.HTTP_200_OK)
 
 
 
@@ -373,6 +375,8 @@ class QuizView(APIView):
     def put(self, request, course_id, *args, **kwargs):
         content_id = request.query_params.get('content_id')
         course = Course.objects.get(id=content_id)
+        if course.active == True:
+            return Response({"error": 'we can not update active course'}, status=status.HTTP_403_FORBIDDEN)
         quiz = Quiz.objects.get(
                 courses__id=course_id, 
                 id=content_id, 
