@@ -164,6 +164,8 @@ class ReadingMaterialView(APIView):
                 if reading_material :
                     serializer = ReadingMaterialSerializer(reading_material)
                     return Response(serializer.data, status=status.HTTP_200_OK)
+                else:
+                    return Response("error: no reading material found", status=status.HTTP_404_NOT_FOUND)
             elif list_mode:
                 reading_materials = UploadReadingMaterial.objects.filter(
                     courses__id=course_id, 
