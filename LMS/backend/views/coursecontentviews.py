@@ -129,6 +129,35 @@ class CourseStructureView(APIView):
                     return Response({"error": "Validation Error: " + str(e)}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+                
+    def put(self, request, course_id, *args, **kwargs):
+        """
+        take query parameter for course structure of the course to be restored
+        when restoring is being done :
+            we will get the list of course structure instances which have active= False and deleted_at != null
+            then for all selected instance ids we will check for content_ids:
+            if course_structure.content_type=='reading':
+                reading_material = UploadReadingMaterial.objects.filter(courses=course_id, pk=course_structure.content_id,active= True,deleted_at__isnull=True)
+                if not reading_material:
+                    response like this course structure instance can't be restored or something as reading material doesn't exists any longer, and etc
+            if course_structure.content_type=='video':
+                video = UploadVideo.objects.filter(courses=course_id, pk=course_structure.content_id,active= True,deleted_at__isnull=True)
+                if not video:
+                    response like this course structure instance can't be restored or something as video doesn't exists any longer, and etc
+            if course_structure.content_type=='quiz':
+                quiz = Quiz.objects.filter(courses=course_id, pk=course_structure.content_id,active= True,deleted_at__isnull=True)
+                if not quiz:
+                    response like this course structure instance can't be restored or something as quiz doesn't exists any longer, and etc
+            else:
+                //course structure is not valid or something
+            then course_structure.active = True
+            and course_structure.deleted_at = null
+            course_structure.save()
+            for all selected course structures
+        """
+        pass
+                
 
 
 class ReadingMaterialView(APIView):
