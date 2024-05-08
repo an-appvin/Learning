@@ -98,19 +98,6 @@ class CourseStructure(models.Model):
 # -------------------------------------
     # course register record models
 # -------------------------------------
-
-class CourseRegisterRecordManager(models.Manager):
-    def search(self, course_query=None, customer_query=None):
-        queryset = self.get_queryset()
-
-        if course_query:
-            queryset = queryset.filter(course__title__icontains=course_query)
-
-        if customer_query:
-            queryset = queryset.filter(customer__name__icontains=customer_query)
-
-        return queryset
-    
 class CourseRegisterRecord(models.Model):
     id = models.AutoField(primary_key=True)
     customer = models.ForeignKey(Customer, related_name='registered_courses', on_delete=models.CASCADE)
@@ -120,7 +107,6 @@ class CourseRegisterRecord(models.Model):
     updated_at = models.DateTimeField(auto_now=True, auto_now_add=False, null=True)
     deleted_at = models.DateTimeField(null=True)
     
-    objects = CourseRegisterRecordManager()
     
     def __str__(self):
         return self.customer.name+" - "+self.course.title
@@ -131,18 +117,6 @@ class CourseRegisterRecord(models.Model):
 # -------------------------------------
     # course enrollment models
 # -------------------------------------
-class CourseEnrollmentManager(models.Manager):
-    def filter_by_course_and_user(self, course_query=None, user_query=None):
-        queryset = self.get_queryset()
-
-        if course_query:
-            queryset = queryset.filter(course__title__icontains=course_query)
-
-        if user_query:
-            queryset = queryset.filter(user__name__icontains=user_query)
-
-        return queryset
-
 class CourseEnrollment(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, related_name='enrollments', on_delete=models.CASCADE)
@@ -152,7 +126,6 @@ class CourseEnrollment(models.Model):
     active = models.BooleanField(default= True)
     deleted_at = models.DateTimeField(null=True)
     
-    objects = CourseEnrollmentManager()
     
     def __str__(self):
         return self.user.name+"-"+self.course.title
